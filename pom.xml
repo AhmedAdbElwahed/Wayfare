@@ -15,6 +15,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>wayfare-config-server</module>
+		<module>wayfare-server-discovery</module>
 	</modules>
 	<name>wayfare</name>
 	<description />
