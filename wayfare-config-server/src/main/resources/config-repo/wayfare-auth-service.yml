@@ -1,0 +1,36 @@
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/wayfare_auth
+    username: ${DB_USERNAME:wayfare}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+jwt:
+  issuer: http://wayfare-auth-service/auth
+  # RSA signing key pair, supplied as PEM files. Default is the container mount
+  # path for the Kubernetes Secret (see deploy manifest); override the env vars
+  # for local dev, e.g. JWT_PRIVATE_KEY=file:./keys/private.pem.
+  public-key: ${JWT_PUBLIC_KEY:file:/etc/wayfare/jwt/public.pem}
+  private-key: ${JWT_PRIVATE_KEY:file:/etc/wayfare/jwt/private.pem}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
