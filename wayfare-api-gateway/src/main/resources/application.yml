@@ -1,0 +1,12 @@
+spring:
+    application:
+        name: wayfare-api-gateway
+    config:
+        import: "configserver:http://localhost:8888"
+    cloud:
+        config:
+            fail-fast: true
+            retry:
+                max-attempts: 6
+                initial-interval: 1500
+

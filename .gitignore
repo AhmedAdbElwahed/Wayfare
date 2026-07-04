@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+my-docs/
+
+### Secrets — never commit key material ###
+*.pem
+keys/

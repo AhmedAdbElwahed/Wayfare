@@ -16,6 +16,8 @@
 	<modules>
 		<module>wayfare-config-server</module>
 		<module>wayfare-server-discovery</module>
+		<module>wayfare-auth-service</module>
+		<module>wayfare-api-gateway</module>
 	</modules>
 	<name>wayfare</name>
 	<description />
