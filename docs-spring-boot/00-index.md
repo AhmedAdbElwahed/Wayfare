@@ -31,7 +31,7 @@ detailed document.
 | 02 | [Database Strategy](./02-database-strategy.md) | Per-service datastore + Spring Data module choice |
 | 03 | [Real-time & WebSockets](./03-realtime-websockets.md) | Spring WebSocket/STOMP, Redis Pub/Sub, location ingestion |
 | 04 | [CQRS & Event-Driven Design](./04-cqrs-event-driven.md) | Spring Cloud Stream, Kafka, CQRS in Trip |
-| 05 | [User Service](./05-user-service.md) | Rider accounts, Spring Security JWT, payment history |
+| 05 | [Rider Service](./05-rider-service.md) | Rider profiles, payment method references, ride-history index |
 | 06 | [Driver Service](./06-driver-service.md) | Driver accounts, vehicles, availability, location ingest |
 | 07 | [Matching Service](./07-matching-service.md) | Rider↔driver matching, Spring Data Redis geo |
 | 08 | [Pricing Service](./08-pricing-service.md) | Fare calculation, surge / dynamic pricing |
@@ -47,7 +47,7 @@ detailed document.
 
 | Service | Core responsibility | Sync API | Primary datastore | Spring Data module |
 |---------|--------------------|----------|-------------------|--------------------|
-| **User** | Rider identity, profile, payment methods, ride history | REST (Spring MVC) + gRPC | PostgreSQL | Spring Data JPA |
+| **Rider** | Rider profile, payment methods, ride history | REST (Spring MVC) + gRPC | PostgreSQL | Spring Data JPA |
 | **Driver** | Driver identity, vehicle/docs, availability, location | REST + WebSocket | PostgreSQL + Redis (geo) | Spring Data JPA + Spring Data Redis |
 | **Matching** | Find & assign the best driver to a request | Event-driven + gRPC | Redis (geo) | Spring Data Redis |
 | **Pricing** | Base fare + dynamic surge multipliers | gRPC | Redis + PostgreSQL/TimescaleDB | Spring Data Redis + Spring Data JPA |

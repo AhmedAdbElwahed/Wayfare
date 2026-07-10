@@ -11,7 +11,8 @@ and the **Spring Data module** that accesses it.
 
 | Service | Primary store | Secondary store | Spring Data module(s) | Why (one line) |
 |---------|--------------|-----------------|----------------------|----------------|
-| User | **PostgreSQL** | Redis (session cache) | `spring-data-jpa` + `spring-data-redis` | Relational integrity for accounts, payments, history; ACID matters |
+| Auth | **PostgreSQL** (own schema/DB) | — | `spring-data-jpa` | One small `accounts` table (credentials), but kept isolated since it's shared by riders and drivers |
+| Rider | **PostgreSQL** | Redis (session cache) | `spring-data-jpa` + `spring-data-redis` | Relational integrity for profiles, payments, history; ACID matters |
 | Driver | **PostgreSQL** | **Redis (geospatial)** | `spring-data-jpa` + `spring-data-redis` | Profile/docs need relations; live GPS needs in-memory geo writes |
 | Matching | **Redis** | — (Kafka for input) | `spring-data-redis` | Pure sub-millisecond geospatial reads + ephemeral match state |
 | Pricing | **Redis** | **TimescaleDB / PostgreSQL** | `spring-data-redis` + `spring-data-jpa` | Real-time counters in Redis; rules + history in time-series/SQL |
@@ -20,10 +21,53 @@ and the **Spring Data module** that accesses it.
 
 ---
 
-## 1. User Service → PostgreSQL via Spring Data JPA
+## 1. Auth Service → PostgreSQL via Spring Data JPA
 
-**Data:** `users`, `profiles`, `payment_methods`, `addresses`, `ratings_given`,
-`history_index`.
+**Data:** `accounts` only — `id`, `email`, `passwordHash`, `role` (`RIDER`/`DRIVER`),
+`status`, `createdAt`. Shared identity/credentials for both riders and drivers.
+
+**Own database, even though it's one small table.** The database-per-service rule
+above isn't about table count — it's about not coupling migrations, deploys, and
+connection pools across services. Auth-service is deliberately split out from Rider
+Service so both riders and drivers can share one login/JWT-issuance path without
+either depending on the other's schema. Sharing a schema with Rider Service would
+undo that: a profile migration could lock the accounts table, or someone eventually
+"just joins across schemas" because it's sitting right there.
+
+In practice this means a separate logical database (e.g. `wayfare_auth` vs.
+`wayfare_users`) with its own credentials and its own Flyway migration history —
+not necessarily a separate physical Postgres server. Same cluster is fine for a
+table this size; same schema is not.
+
+```java
+@Entity
+@Table(name = "accounts")
+public class Account {
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    @Column(unique = true) private String email;
+    private String passwordHash;
+    @Enumerated(EnumType.STRING) private AccountRole role;
+    @Enumerated(EnumType.STRING) private AccountStatus status;
+    private Instant createdAt;
+}
+
+public interface AccountRepository extends JpaRepository<Account, UUID> {
+    Optional<Account> findByEmail(String email);
+}
+```
+
+**Database migrations:** Flyway, isolated from every other service's migration
+history.
+
+---
+
+## 2. Rider Service → PostgreSQL via Spring Data JPA
+
+**Data:** `profiles`, `payment_methods`, `addresses`, `ratings_given`,
+`history_index` — no local credentials table; rows are keyed by the `Account.id`
+issued by Auth Service (the JWT `sub`). See
+[05-rider-service.md](./05-rider-service.md).
 
 **Spring Data module:** `spring-boot-starter-data-jpa` (Hibernate as the JPA
 provider) + `spring-boot-starter-data-redis` (Lettuce) for caching.
@@ -45,28 +89,26 @@ provider) + `spring-boot-starter-data-redis` (Lettuce) for caching.
 ```
 
 **Why PostgreSQL + JPA:**
-- User and payment data is inherently **relational** (user → cards → addresses →
-  history). JPA entities and foreign key constraints enforce this at the DB level.
+- Profile and payment data is inherently **relational** (account → profile → cards →
+  addresses → history). JPA entities and foreign key constraints enforce this at
+  the DB level.
 - **ACID transactions** via `@Transactional` — you don't want a half-written payment
-  method or a duplicate account from a race.
+  method or a duplicate profile from a race.
 - Mature support for **row-level security** and encryption; PII compliance (GDPR).
 - Read-heavy profile lookups are cached in Redis using Spring Cache (`@Cacheable` +
   a `RedisCacheManager`); short TTL + `@CacheEvict` on profile updates.
 
 ```java
 @Entity
-@Table(name = "users")
-public class User {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-    private String phone;
-    private String email;
+@Table(name = "profiles")
+public class Profile {
+    @Id private UUID userId;   // = Account.id from Auth Service (JWT sub)
+    private String name;
+    private String photoUrl;
     // ...
 }
 
-public interface UserRepository extends JpaRepository<User, UUID> {
-    Optional<User> findByPhone(String phone);
-}
+public interface ProfileRepository extends JpaRepository<Profile, UUID> { }
 ```
 
 **Database migrations:** Flyway (`spring-boot-starter-flyway`) — migration scripts
@@ -74,7 +116,7 @@ run automatically on startup.
 
 ---
 
-## 2. Driver Service → PostgreSQL + Redis (geospatial)
+## 3. Driver Service → PostgreSQL + Redis (geospatial)
 
 Two very different data profiles; two stores.
 
@@ -114,7 +156,7 @@ public class DriverLocationService {
 
 ---
 
-## 3. Matching Service → Redis via Spring Data Redis
+## 4. Matching Service → Redis via Spring Data Redis
 
 **Data:** live driver geo-index + short-lived match reservation locks.
 
@@ -153,7 +195,7 @@ and reads the current geo-index.
 
 ---
 
-## 4. Pricing Service → Redis + TimescaleDB/PostgreSQL
+## 5. Pricing Service → Redis + TimescaleDB/PostgreSQL
 
 **Real-time surge → Spring Data Redis:**
 
@@ -201,7 +243,7 @@ public interface SurgeHistoryRepository extends JpaRepository<SurgeHistory, Long
 
 ---
 
-## 5. Trip Service → PostgreSQL (write) + MongoDB (read) — the CQRS core
+## 6. Trip Service → PostgreSQL (write) + MongoDB (read) — the CQRS core
 
 Trip is the only service applying **CQRS** with separate write and read stores.
 
@@ -275,7 +317,7 @@ spring:
 
 ---
 
-## 6. Notification Service → Cassandra via Spring Data Cassandra
+## 7. Notification Service → Cassandra via Spring Data Cassandra
 
 ```xml
 <dependency>
@@ -320,3 +362,7 @@ public interface NotificationRepository
 5. **Time-series analytics → TimescaleDB (accessed via Spring Data JPA / native `@Query`).**
 6. **Cache the hot read path** with Spring Cache (`@Cacheable`) backed by
    `RedisCacheManager` — short TTLs, `@CacheEvict` on mutations.
+7. **Database-per-service applies regardless of table count.** Auth Service has a
+   single small `accounts` table but still gets its own schema/database — isolation
+   is about decoupling migrations and deploys, not sizing the store to the data
+   volume.

@@ -10,9 +10,9 @@ real-time and dynamic layers on top.
 ## Phase 0 — Foundations (Spring Cloud infrastructure)
 
 - **Monorepo / multi-module Maven (or Gradle)** structure:
-  `platform/user-service`, `platform/driver-service`, etc., plus shared modules:
-  `platform/common-events` (domain event records), `platform/common-security`
-  (JWT filter), `platform/common-tracing`.
+  `platform/auth-service`, `platform/rider-service`, `platform/driver-service`, etc.,
+  plus shared modules: `platform/common-events` (domain event records),
+  `platform/common-security` (JWT filter), `platform/common-tracing`.
 - **Spring Cloud Config Server** — Git-backed; all service configs live here from
   day one. No service ships with secrets or env-specific values in `application.yml`.
 - **Spring Cloud Netflix Eureka Server** — standalone Spring Boot app; all services
@@ -32,15 +32,19 @@ appear in Zipkin end-to-end.
 
 ## Phase 1 — Identity & accounts
 
-- **User Service** (Spring Boot + Spring Data JPA / PostgreSQL + Spring Security):
-  register, login, JWT issuance (RS256), profile CRUD, payment-method tokens, Redis
-  caching with `@Cacheable`.
+- **Auth Service** (Spring Boot + Spring Data JPA / PostgreSQL + Spring Security):
+  register, login, JWT issuance (RS256), JWKS endpoint. Shared by both riders and
+  drivers — one `accounts` table, one login/JWT path.
+- **Rider Service** (Spring Boot + Spring Data JPA / PostgreSQL + Spring Security):
+  profile CRUD, payment-method tokens, Redis caching with `@Cacheable`; validates
+  JWTs issued by Auth Service (resource server only, no local credentials).
 - **Driver Service** (Spring Boot + Spring Data JPA / PostgreSQL + Spring Data Redis):
   onboarding, vehicle, document upload, approval status, `@Scheduled` document-
-  expiry job.
-- **Spring Cloud Gateway** wired with `AuthJwtFilter`; JWKS endpoint from User
+  expiry job; also a resource server against Auth Service's JWTs.
+- **Spring Cloud Gateway** wired with `AuthJwtFilter`; JWKS endpoint from Auth
   Service cached at the gateway.
-- Flyway migrations for both services run on startup.
+- Flyway migrations for all three services run on startup, each in its own
+  schema/database.
 
 **Exit criteria:** riders and drivers can sign up, authenticate, receive a JWT, and
 be approved. All endpoints are rate-limited and JWT-protected at the gateway.
@@ -113,7 +117,7 @@ property.
   - Dedupe via `setIfAbsent`; rate-limiting via Redis counter + TTL.
   - Delivery log to Cassandra `notifications_by_user` table.
   - In-app notifications via Redis Pub/Sub → WS Gateway STOMP topic.
-- Ratings flow: `TripCompleted` → User Service `onTripCompleted` consumer creates
+- Ratings flow: `TripCompleted` → Rider Service `onTripCompleted` consumer creates
   `history_index` row and optionally triggers rating prompt.
 - Cancellation fees: Trip Service applies fee logic in `cancel()` command.
 - Promos: Pricing Service reads promo rules from Config Server / fare rule table.
@@ -171,7 +175,8 @@ platform/
 ├── eureka-server/          # Spring Cloud Netflix Eureka Server app
 ├── api-gateway/            # Spring Cloud Gateway app
 ├── ws-gateway/             # Spring WebSocket + STOMP gateway app
-├── user-service/
+├── auth-service/
+├── rider-service/
 ├── driver-service/
 ├── matching-service/
 ├── pricing-service/

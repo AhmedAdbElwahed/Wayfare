@@ -57,8 +57,8 @@ spring:
 platform-config/
 ├── application.yml              # shared defaults for all services
 ├── services/
-│   ├── user-service/
-│   │   ├── application.yml      # user-service defaults
+│   ├── rider-service/
+│   │   ├── application.yml      # rider-service defaults
 │   │   └── application-prod.yml # prod overrides
 │   ├── trip-service/
 │   │   └── application.yml
@@ -74,7 +74,7 @@ platform-config/
 # Each service's bootstrap.yml (loaded before application.yml)
 spring:
   application:
-    name: user-service          # must match the config repo subdirectory
+    name: rider-service          # must match the config repo subdirectory
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   config:
@@ -327,18 +327,18 @@ spring:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
       routes:
-        # --- Public (no JWT required) ---
-        - id: auth-register
-          uri: lb://user-service
+        # --- Public (no JWT required) — Auth Service owns identity for both riders and drivers ---
+        - id: auth-service
+          uri: lb://auth-service
           predicates:
-            - Path=/auth/register, /auth/login
+            - Path=/auth/**
           # No AuthJwtFilter here
 
         # --- Protected REST routes ---
-        - id: user-service
-          uri: lb://user-service
+        - id: rider-service
+          uri: lb://rider-service
           predicates:
-            - Path=/auth/refresh, /users/**
+            - Path=/riders/**
           filters:
             - AuthJwtFilter
             - name: RequestRateLimiter
@@ -493,7 +493,7 @@ public class GatewaySecurityConfig {
 4. API Gateway                                         (spring-boot app, port 8080)
 5. WebSocket Gateway                                   (spring-boot app, port 8085)
 6. Application services (any order, they retry on Eureka/Config until ready)
-   user-service | driver-service | matching-service
+   auth-service | rider-service | driver-service | matching-service
    pricing-service | trip-service | notification-service
 ```
 

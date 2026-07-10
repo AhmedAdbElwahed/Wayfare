@@ -33,8 +33,8 @@ user out of the box:
 ```
 
 ```bash
-mvn spring-boot:build-image -pl user-service
-docker push registry.example.com/user-service:1.0.0
+mvn spring-boot:build-image -pl rider-service
+docker push registry.example.com/rider-service:1.0.0
 ```
 
 ---
@@ -185,9 +185,13 @@ spring:
             redis-rate-limiter.burstCapacity: 200
             key-resolver: "#{@userKeyResolver}"
       routes:
-        - id: user-service
-          uri: lb://user-service
-          predicates: [Path=/auth/**, /users/**]
+        - id: auth-service
+          uri: lb://auth-service
+          predicates: [Path=/auth/**]
+
+        - id: rider-service
+          uri: lb://rider-service
+          predicates: [Path=/riders/**]
           filters:
             - AuthJwtFilter
 

@@ -26,7 +26,7 @@ flowchart TB
     end
 
     subgraph Services
-        US[User Service<br/>Spring Boot]
+        RS[Rider Service<br/>Spring Boot]
         DS[Driver Service<br/>Spring Boot]
         MS[Matching Service<br/>Spring Boot]
         PS[Pricing Service<br/>Spring Boot]
@@ -44,7 +44,7 @@ flowchart TB
     RA <-->|WSS/STOMP| WS
     DA <-->|WSS/STOMP| WS
 
-    GW --> US
+    GW --> RS
     GW --> DS
     GW --> TS
     GW --> PS
@@ -56,7 +56,7 @@ flowchart TB
     DS --> R
     PS --> R
 
-    US <--> K
+    RS <--> K
     DS <--> K
     MS <--> K
     PS <--> K
@@ -64,13 +64,13 @@ flowchart TB
     NS <--> K
     WS <--> K
 
-    EUREKA -.->|registers| US
+    EUREKA -.->|registers| RS
     EUREKA -.->|registers| DS
     EUREKA -.->|registers| MS
     EUREKA -.->|registers| PS
     EUREKA -.->|registers| TS
     EUREKA -.->|registers| NS
-    CONFIG -.->|config| US
+    CONFIG -.->|config| RS
     CONFIG -.->|config| DS
 ```
 
@@ -93,7 +93,7 @@ spring:
   config:
     import: "configserver:http://config-server:8888"
   application:
-    name: user-service
+    name: rider-service
 ```
 
 ### Spring Cloud Netflix Eureka Server

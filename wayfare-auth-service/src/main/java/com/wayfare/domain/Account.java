@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * Credentials only — this is the identity/authentication record shared by
  * riders and drivers. Role-specific profile data (rider payment methods,
- * driver vehicles/documents, ...) lives in wayfare-user-service /
+ * driver vehicles/documents, ...) lives in wayfare-rider-service /
  * wayfare-driver-service, keyed by this same id (the JWT subject).
  */
 @Entity

@@ -27,10 +27,10 @@ Use the Maven wrapper from the repo root, targeting the module with `-pl`. Start
 - Active profile: `native`, serving config from `classpath:/config-repo`.
 - Exposed actuator endpoints: `health`, `info`, `refresh`.
 
-Example: fetch the shared config for `wayfare-user-service` (dev profile):
+Example: fetch the shared config for `wayfare-rider-service` (dev profile):
 
 ```bash
-curl http://localhost:8888/wayfare-user-service/dev
+curl http://localhost:8888/wayfare-rider-service/dev
 ```
 
 To add config for a new service, drop a `<service-name>.yml` (and optional `<service-name>-<profile>.yml`) file into [wayfare-config-server/src/main/resources/config-repo](wayfare-config-server/src/main/resources/config-repo).
