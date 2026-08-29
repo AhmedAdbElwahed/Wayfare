@@ -1,1 +1,37 @@
 # Rider service configuration
+
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/wayfare_rider
+    username: ${DB_USERNAME:wayfare}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Same reasoning as the gateway — see wayfare-api-gateway.yml — plus
+          # one more wrinkle: even under Docker Compose, don't wrap the
+          # Eureka logical name in an lb:// scheme here — this property wants
+          # a literal URL, not a Spring Cloud LB URI. AUTH_SERVICE_URL points
+          # straight at the Compose *service* name instead, which Docker's
+          # embedded DNS resolves like any other host — a mechanism that has
+          # nothing to do with Eureka/lb://.
+          jwk-set-uri: ${AUTH_SERVICE_URL:http://localhost:8081}/auth/.well-known/jwks.json
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

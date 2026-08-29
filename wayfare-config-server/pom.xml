@@ -40,4 +40,15 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <!-- Repackages this module as an executable fat jar; the Docker
+                 image just copies target/*.jar and runs `java -jar`. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

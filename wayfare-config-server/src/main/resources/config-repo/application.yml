@@ -1,1 +1,13 @@
 # Services Shared Configuration
+
+eureka:
+  instance:
+    # Register with the container's IP rather than its hostname (a random
+    # container ID Docker doesn't publish a DNS entry for). Only the
+    # *service* name is resolvable on the compose network, not each
+    # container's own hostname, so lb:// routing (see the gateway's routes)
+    # needs the IP to reach an instance at all.
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}

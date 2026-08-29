@@ -1,0 +1,11 @@
+# target/ contents are excluded, except the packaged jars the Dockerfiles copy.
+# Note the trailing /* — ignoring the directory itself (**/target/) would stop
+# Docker descending into it, and the negation below could never match.
+**/target/*
+!**/target/*.jar
+.git/
+.idea/
+.vscode/
+docs-spring-boot/
+my-docs/
+keys/

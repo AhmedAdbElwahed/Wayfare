@@ -10,10 +10,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * JWT validation happens only at the API Gateway (see wayfare-api-gateway's
- * GatewaySecurityConfig) — this service's own endpoints are inherently
- * pre-auth (register/login) or public key material (jwks), so nothing here
- * needs to be protected.
+ * JWT validation is defense-in-depth: the API Gateway validates at the edge
+ * (see wayfare-api-gateway's GatewaySecurityConfig), and downstream resource
+ * servers (rider-service, driver-service, ...) independently validate the
+ * same forwarded token against this service's JWKS. Neither applies here —
+ * this service's own endpoints are inherently pre-auth (register/login) or
+ * public key material (jwks), so nothing in this service needs protecting.
  */
 @Configuration
 @EnableWebSecurity

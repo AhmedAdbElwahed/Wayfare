@@ -1,0 +1,138 @@
+# Local dev stack. Passwords/keys below are throwaway dev defaults, not for
+# production use. Bringing every service up under Compose means the Compose
+# *service* names (wayfare-auth-service, postgres, ...) are real hostnames
+# resolved by Docker's embedded DNS — that's what lets config-repo/*.yml
+# point AUTH_SERVICE_URL/DB_HOST/etc at a name instead of localhost.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wayfare
+      POSTGRES_PASSWORD: wayfare
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports:
+      # Host-side port only; override when something else already holds 5432
+      # on this machine, e.g. `DB_PORT=5433 make up`. Containers always reach
+      # postgres on 5432 over the compose network regardless.
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wayfare"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wayfare-config-server:
+    build:
+      context: .
+      dockerfile: wayfare-config-server/Dockerfile
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  wayfare-server-discovery:
+    build:
+      context: .
+      dockerfile: wayfare-server-discovery/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+    ports:
+      - "8761:8761"
+    depends_on:
+      wayfare-config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  wayfare-auth-service:
+    build:
+      context: .
+      dockerfile: wayfare-auth-service/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      DB_HOST: postgres
+      DB_USERNAME: wayfare
+      DB_PASSWORD: wayfare
+    volumes:
+      - ./keys:/etc/wayfare/jwt:ro
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  wayfare-rider-service:
+    build:
+      context: .
+      dockerfile: wayfare-rider-service/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      DB_HOST: postgres
+      DB_USERNAME: wayfare
+      DB_PASSWORD: wayfare
+      AUTH_SERVICE_URL: http://wayfare-auth-service:8081
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+      wayfare-auth-service:
+        condition: service_healthy
+
+  wayfare-api-gateway:
+    build:
+      context: .
+      dockerfile: wayfare-api-gateway/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      AUTH_SERVICE_URL: http://wayfare-auth-service:8081
+      REDIS_HOST: redis
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+      wayfare-auth-service:
+        condition: service_healthy
+
+volumes:
+  pgdata:

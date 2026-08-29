@@ -14,6 +14,13 @@ treated as infrastructure, not features.
 Centralizes all `application.yml` configuration in a **Git repository**. Services
 pull their config on startup and can refresh at runtime without redeployment.
 
+> `wayfare-config-server` in this repo actually runs the **`native`** profile,
+> serving config from `classpath:/config-repo` (bundled into the jar) instead of
+> a Git backend — simpler for local dev since there's no external repo to stand
+> up. The Git backend below is the production-recommended approach: same
+> `{application}[-{profile}].yml` file layout and client-side config either way,
+> just swap `spring.cloud.config.server.git` for `...native.search-locations`.
+
 ### Bootstrap
 
 ```xml

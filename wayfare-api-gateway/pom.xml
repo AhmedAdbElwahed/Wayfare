@@ -55,11 +55,30 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Backs the RequestRateLimiter filter on the rider route; the filter
+             factory is only registered when a rate limiter implementation is
+             on the classpath. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Repackages this module as an executable fat jar; the Docker
+                 image just copies target/*.jar and runs `java -jar`. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
