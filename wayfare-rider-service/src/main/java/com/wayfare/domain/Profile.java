@@ -21,10 +21,11 @@ public class Profile {
     @Id
     private UUID id; // = Account.id from Auth Service (JWT sub) — no local user table to join to
 
-    @Column(nullable = false)
+    // Nullable because a profile is provisioned from AccountRegistered before
+    // the rider has supplied either — see V5 migration. Both are mandatory on
+    // the way in through POST /riders, enforced by CreateRiderRequest.
     private String name;
 
-    @Column(nullable = false)
     private String phone;
 
     private String photoUrl;
@@ -46,5 +47,15 @@ public class Profile {
         this.phone = phone;
         this.photoUrl = photoUrl;
         this.locale = locale;
+    }
+
+    /**
+     * The placeholder a newly registered rider gets: identity only, every
+     * detail still unset. {@code name == null} is what marks a profile as
+     * never filled in — {@code ProfileService.createProfile} treats such a row
+     * as claimable rather than as a conflict.
+     */
+    public Profile(UUID id) {
+        this.id = id;
     }
 }

@@ -23,12 +23,42 @@ public class ProfileService {
         return profileRepository.findById(id).orElseThrow(() -> new ProfileNotFoundException(id));
     }
 
+    /**
+     * Provisions the placeholder profile for a newly registered rider. Returns
+     * whether a row was actually written, so the caller can tell a real
+     * provisioning apart from a redelivery of the same event.
+     *
+     * <p>Safe to call repeatedly by design — see
+     * {@link com.wayfare.event.AccountEventsConsumer}.
+     */
+    @Transactional
+    public boolean ensureProfile(UUID id) {
+        if (profileRepository.existsById(id)) {
+            return false;
+        }
+        profileRepository.save(new Profile(id));
+        return true;
+    }
+
+    /**
+     * Fills in the rider's own details. Since AccountRegistered now creates
+     * the row first, the common path here is claiming that placeholder rather
+     * than inserting — an existing row is only a conflict if someone has
+     * already filled it in, which {@code name != null} identifies. Treating
+     * every existing row as a conflict would 409 every rider who registered
+     * after the consumer went live.
+     */
     @Transactional
     public Profile createProfile(UUID id, CreateRiderRequest request) {
-        if (profileRepository.existsById(id)) {
+        Profile profile = profileRepository.findById(id)
+                .orElseGet(() -> new Profile(id));
+        if (profile.getName() != null) {
             throw new ProfileAlreadyExistsException(id);
         }
-        Profile profile = new Profile(id, request.name(), request.phone(), request.photoUrl(), request.locale());
+        profile.setName(request.name());
+        profile.setPhone(request.phone());
+        profile.setPhotoUrl(request.photoUrl());
+        profile.setLocale(request.locale());
         return profileRepository.save(profile);
     }
 

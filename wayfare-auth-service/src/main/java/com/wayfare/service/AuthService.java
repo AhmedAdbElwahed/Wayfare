@@ -6,8 +6,10 @@ import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.exception.EmailAlreadyRegisteredException;
 import com.wayfare.exception.InvalidCredentialsException;
+import com.wayfare.event.AccountRegisteredEvent;
 import com.wayfare.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ public class AuthService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Account register(RegisterRequest request) {
@@ -34,7 +37,12 @@ public class AuthService {
                 request.email(),
                 passwordEncoder.encode(request.password()),
                 request.role());
-        return accountRepository.save(account);
+        Account saved = accountRepository.save(account);
+        // Handed to AccountEventPublisher, which holds it until this
+        // transaction commits before putting it on the broker.
+        eventPublisher.publishEvent(new AccountRegisteredEvent(
+                saved.getId(), saved.getEmail(), saved.getRole(), saved.getCreatedAt()));
+        return saved;
     }
 
     /**

@@ -27,6 +27,24 @@ spring:
           # nothing to do with Eureka/lb://.
           jwk-set-uri: ${AUTH_SERVICE_URL:http://localhost:8081}/auth/.well-known/jwks.json
 
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+      bindings:
+        # Binding name must match the @Bean method name in
+        # AccountEventsConsumer — that's how the function gets bound.
+        onAccountRegistered-in-0:
+          destination: account.events
+          # A consumer group means one delivery per group, not per instance:
+          # scale rider-service to N replicas and a registration still creates
+          # exactly one profile. Without it every replica would consume every
+          # message.
+          group: rider-service
+          consumer:
+            max-attempts: 3
+
 management:
   endpoints:
     web:
@@ -35,3 +53,16 @@ management:
   endpoint:
     health:
       show-details: always
+      # Splits the aggregate health into /actuator/health/liveness (is the
+      # process alive) and /actuator/health/readiness (can it serve traffic).
+      # Readiness includes the datasource check, so an instance that can't
+      # reach PostgreSQL stops being routed to instead of returning 500s.
+      probes:
+        enabled: true
+  health:
+    # spring-boot-starter-data-redis is on the classpath but nothing uses it
+    # yet (caching is still a TODO), so its health indicator would report DOWN
+    # against a Redis this service never connects to — and drag the whole
+    # endpoint down with it. Re-enable this alongside the first @Cacheable.
+    redis:
+      enabled: false

@@ -91,6 +91,12 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream</artifactId>
         </dependency>
+        <!-- Binder implementation: spring-cloud-stream alone is just the
+             programming model, it binds to nothing without this. -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-binder-kafka</artifactId>
+        </dependency>
         <!-- gRPC server for internal calls -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -13,6 +13,21 @@ spring:
   flyway:
     enabled: true
 
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+          configuration:
+            # Retries can duplicate a record on the topic without this; the
+            # consumer is idempotent anyway, but cheap to get right at source.
+            enable.idempotence: true
+            acks: all
+      bindings:
+        accountRegistered-out-0:
+          destination: account.events
+          contentType: application/json
+
 jwt:
   issuer: http://localhost:8081/auth
   # RSA signing key pair, supplied as PEM files. Default is the container mount
