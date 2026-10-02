@@ -1,0 +1,11 @@
+# Tests never talk to Config Server or Eureka.
+spring:
+  config:
+    import: ""
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+eureka:
+  client:
+    enabled: false

@@ -1,0 +1,63 @@
+# Driver service configuration
+
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/wayfare_driver
+    username: ${DB_USERNAME:wayfare}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Literal URL, not an lb:// Eureka name — see wayfare-rider-service.yml.
+          jwk-set-uri: ${AUTH_SERVICE_URL:http://localhost:8081}/auth/.well-known/jwks.json
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+          configuration:
+            enable.idempotence: true
+            acks: all
+      bindings:
+        # Binding name must match the @Bean method name in AccountEventsConsumer.
+        onAccountRegistered-in-0:
+          destination: account.events
+          group: driver-service
+          consumer:
+            max-attempts: 3
+        # Used by DriverEventPublisher via StreamBridge.
+        driverEvents-out-0:
+          destination: driver.events
+          contentType: application/json
+
+wayfare:
+  driver:
+    document-expiry-cron: "0 0 2 * * *"
+  storage:
+    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
+    # Address clients use; presigned URLs are signed for this host.
+    public-endpoint: ${STORAGE_PUBLIC_ENDPOINT:http://localhost:9000}
+    access-key: ${STORAGE_ACCESS_KEY:wayfare}
+    secret-key: ${STORAGE_SECRET_KEY:wayfare-secret}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

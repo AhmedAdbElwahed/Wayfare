@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wayfare</groupId>
+        <artifactId>wayfare</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wayfare-common-events</artifactId>
+    <description>Domain event records shared between services. Plain jar, no Spring dependencies.</description>
+
+    <!-- Deliberately dependency-free and not repackaged: it is pulled into each
+         service's fat jar as an ordinary library. -->
+</project>

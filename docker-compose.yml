@@ -31,6 +31,29 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    # S3-compatible object store for driver documents (private bucket) and
+    # profile photos (public-read bucket). Buckets are created by the services
+    # at startup. Console: http://localhost:9001 (wayfare / wayfare-secret).
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: wayfare
+      MINIO_ROOT_PASSWORD: wayfare-secret
+    volumes:
+      - miniodata:/data
+    ports:
+      # Host-side only; override if 9000/9001 are taken, e.g.
+      # `MINIO_PORT=9100 make up`. The public endpoint below follows it, since
+      # presigned URLs are signed for the address the *client* uses.
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
     # KRaft mode — no ZooKeeper. Single broker, single node id, which is why
     # the replication/ISR settings below are all forced to 1: the defaults
@@ -130,10 +153,19 @@ services:
       DB_PASSWORD: wayfare
       AUTH_SERVICE_URL: http://wayfare-auth-service:8081
       KAFKA_BROKERS: kafka:9092
+      REDIS_HOST: redis
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_PUBLIC_ENDPOINT: http://localhost:${MINIO_PORT:-9000}
+      STORAGE_ACCESS_KEY: wayfare
+      STORAGE_SECRET_KEY: wayfare-secret
     ports:
       - "8082:8082"
     depends_on:
+      minio:
+        condition: service_healthy
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -145,6 +177,44 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  wayfare-driver-service:
+    build:
+      context: .
+      dockerfile: wayfare-driver-service/Dockerfile
+    environment:
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      DB_HOST: postgres
+      DB_USERNAME: wayfare
+      DB_PASSWORD: wayfare
+      AUTH_SERVICE_URL: http://wayfare-auth-service:8081
+      KAFKA_BROKERS: kafka:9092
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_PUBLIC_ENDPOINT: http://localhost:${MINIO_PORT:-9000}
+      STORAGE_ACCESS_KEY: wayfare
+      STORAGE_SECRET_KEY: wayfare-secret
+    ports:
+      - "8083:8083"
+    depends_on:
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+      wayfare-auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -173,3 +243,4 @@ services:
 
 volumes:
   pgdata:
+  miniodata:

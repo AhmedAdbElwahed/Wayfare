@@ -14,11 +14,14 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
+		<module>wayfare-common-events</module>
+		<module>wayfare-common-storage</module>
 		<module>wayfare-config-server</module>
 		<module>wayfare-server-discovery</module>
 		<module>wayfare-auth-service</module>
 		<module>wayfare-api-gateway</module>
         <module>wayfare-rider-service</module>
+        <module>wayfare-driver-service</module>
     </modules>
 	<name>wayfare</name>
 	<description />

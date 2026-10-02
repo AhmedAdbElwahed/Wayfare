@@ -1,5 +1,6 @@
 package com.wayfare.dto;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -12,7 +13,7 @@ public record RiderResponse(
         String photoUrl,
         String locale,
         UUID defaultPaymentId,
-        Instant createdAt) {
+        Instant createdAt) implements Serializable {
     public static RiderResponse from(Profile profile) {
         return new RiderResponse(
                 profile.getId(),

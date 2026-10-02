@@ -1,9 +1,13 @@
 package com.wayfare.controller;
 
 import com.wayfare.dto.CreateRiderRequest;
+import com.wayfare.dto.PhotoRequest;
+import com.wayfare.dto.PhotoUploadUrlRequest;
 import com.wayfare.dto.RiderResponse;
+import com.wayfare.dto.UploadUrlResponse;
 import com.wayfare.dto.TripHistoryEntryResponse;
 import com.wayfare.dto.UpdateProfileRequest;
+import com.wayfare.service.PhotoService;
 import com.wayfare.service.ProfileService;
 import com.wayfare.service.TripHistoryService;
 import jakarta.validation.Valid;
@@ -17,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +35,7 @@ public class RiderController {
 
     private final ProfileService profileService;
     private final TripHistoryService tripHistoryService;
+    private final PhotoService photoService;
 
     @PostMapping
     public ResponseEntity<RiderResponse> createRider(@AuthenticationPrincipal Jwt jwt,
@@ -41,8 +47,7 @@ public class RiderController {
 
     @GetMapping("/me")
     public ResponseEntity<RiderResponse> getProfile(@AuthenticationPrincipal Jwt jwt) {
-        RiderResponse response = RiderResponse.from(
-                profileService.getProfile(UUID.fromString(jwt.getSubject())));
+        RiderResponse response = profileService.getRider(UUID.fromString(jwt.getSubject()));
         return ResponseEntity.ok(response);
     }
 
@@ -52,6 +57,18 @@ public class RiderController {
         RiderResponse response = RiderResponse.from(
                 profileService.updateProfile(UUID.fromString(jwt.getSubject()), request));
         return ResponseEntity.ok(response);
+    }
+
+    /** Step 1 of a photo change: presigned PUT URL. Step 2 is PUT /riders/me/photo. */
+    @PostMapping("/me/photo/upload-url")
+    public UploadUrlResponse photoUploadUrl(@AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid PhotoUploadUrlRequest request) {
+        return UploadUrlResponse.from(photoService.uploadUrl(UUID.fromString(jwt.getSubject()), request.contentType()));
+    }
+
+    @PutMapping("/me/photo")
+    public RiderResponse setPhoto(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid PhotoRequest request) {
+        return RiderResponse.from(photoService.setPhoto(UUID.fromString(jwt.getSubject()), request.objectKey()));
     }
 
     @GetMapping("/me/trips")

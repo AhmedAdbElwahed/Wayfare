@@ -41,7 +41,7 @@ public class AuthService {
         // Handed to AccountEventPublisher, which holds it until this
         // transaction commits before putting it on the broker.
         eventPublisher.publishEvent(new AccountRegisteredEvent(
-                saved.getId(), saved.getEmail(), saved.getRole(), saved.getCreatedAt()));
+                saved.getId(), saved.getEmail(), saved.getRole().name(), saved.getCreatedAt()));
         return saved;
     }
 

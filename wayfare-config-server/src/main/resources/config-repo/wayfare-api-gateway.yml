@@ -40,6 +40,14 @@ spring:
               uri: lb://wayfare-auth-service
               predicates:
                 - Path=/auth/**
+              filters:
+                # Unauthenticated endpoints (login/register): keyed by client
+                # address and deliberately tight to slow credential stuffing.
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
             - id: rider-service
               uri: lb://wayfare-rider-service
               predicates:
@@ -47,8 +55,51 @@ spring:
               filters:
                 - name: RequestRateLimiter
                   args:
+                    key-resolver: "#{@userKeyResolver}"
                     redis-rate-limiter.replenishRate: 50
                     redis-rate-limiter.burstCapacity: 100
+
+            - id: driver-service
+              uri: lb://wayfare-driver-service
+              predicates:
+                - Path=/drivers/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 50
+                    redis-rate-limiter.burstCapacity: 100
+
+            # routes that expose each service's OpenAPI spec
+            - id: auth-docs
+              uri: lb://wayfare-auth-service
+              predicates:
+                - Path=/auth-service/v3/api-docs
+              filters:
+                - RewritePath=/auth-service/(?<path>.*), /$\{path}
+            - id: rider-docs
+              uri: lb://wayfare-rider-service
+              predicates:
+                - Path=/rider-service/v3/api-docs
+              filters:
+                - RewritePath=/rider-service/(?<path>.*), /$\{path}
+            - id: driver-docs
+              uri: lb://wayfare-driver-service
+              predicates:
+                - Path=/driver-service/v3/api-docs
+              filters:
+                - RewritePath=/driver-service/(?<path>.*), /$\{path}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Auth Service
+        url: /auth-service/v3/api-docs
+      - name: Rider Service
+        url: /rider-service/v3/api-docs
+      - name: Driver Service
+        url: /driver-service/v3/api-docs
 
 management:
   endpoints:

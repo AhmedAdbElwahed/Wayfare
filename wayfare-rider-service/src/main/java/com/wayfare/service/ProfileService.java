@@ -2,11 +2,14 @@ package com.wayfare.service;
 
 import com.wayfare.domain.Profile;
 import com.wayfare.dto.CreateRiderRequest;
+import com.wayfare.dto.RiderResponse;
 import com.wayfare.dto.UpdateProfileRequest;
 import com.wayfare.exception.ProfileAlreadyExistsException;
 import com.wayfare.exception.ProfileNotFoundException;
 import com.wayfare.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,18 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public Profile getProfile(UUID id) {
         return profileRepository.findById(id).orElseThrow(() -> new ProfileNotFoundException(id));
+    }
+
+    /**
+     * Cached read path for {@code GET /riders/me}. Caches the response DTO, not
+     * the JPA entity, so nothing lazy or managed ends up in Redis. Writes evict
+     * the entry (see the annotations below and in PaymentMethodService); the
+     * TTL in CacheConfig is the backstop.
+     */
+    @Cacheable(cacheNames = "riders", key = "#id")
+    @Transactional(readOnly = true)
+    public RiderResponse getRider(UUID id) {
+        return RiderResponse.from(getProfile(id));
     }
 
     /**
@@ -49,6 +64,7 @@ public class ProfileService {
      * after the consumer went live.
      */
     @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#id")
     public Profile createProfile(UUID id, CreateRiderRequest request) {
         Profile profile = profileRepository.findById(id)
                 .orElseGet(() -> new Profile(id));
@@ -63,6 +79,7 @@ public class ProfileService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#id")
     public Profile updateProfile(UUID id, UpdateProfileRequest request) {
         Profile profile = profileRepository.findById(id).orElseThrow(() -> new ProfileNotFoundException(id));
         if (request.name() != null) {

@@ -5,6 +5,8 @@ import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.dto.TokenResponse;
 import com.wayfare.service.AuthService;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,11 +23,13 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @SecurityRequirements
     @PostMapping("/register")
     public ResponseEntity<AccountResponse> register(@RequestBody @Valid RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(AccountResponse.from(authService.register(request)));
     }
 
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(new TokenResponse(authService.login(request)));

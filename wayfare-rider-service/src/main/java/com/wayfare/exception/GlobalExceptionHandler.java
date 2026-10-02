@@ -1,5 +1,7 @@
 package com.wayfare.exception;
 
+import com.wayfare.storage.InvalidUploadException;
+import com.wayfare.storage.StorageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
@@ -35,6 +37,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PaymentMethodConflictException.class)
     public ProblemDetail handlePaymentMethodConflict(PaymentMethodConflictException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidUploadException.class)
+    public ProblemDetail handleInvalidUpload(InvalidUploadException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(StorageException.class)
+    public ProblemDetail handleStorage(StorageException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, "File storage is temporarily unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

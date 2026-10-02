@@ -7,6 +7,7 @@ import com.wayfare.exception.PaymentMethodNotFoundException;
 import com.wayfare.repository.PaymentMethodRepository;
 import com.wayfare.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class PaymentMethodService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#userId")
     public PaymentMethod addPaymentMethod(UUID userId, AddPaymentMethodRequest request) {
         PaymentMethod paymentMethod = new PaymentMethod();
         paymentMethod.setUserId(userId);
@@ -46,6 +48,7 @@ public class PaymentMethodService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#userId")
     public PaymentMethod setDefault(UUID userId, UUID paymentMethodId) {
         PaymentMethod target = paymentMethodRepository.findByIdAndUserId(paymentMethodId, userId)
                 .orElseThrow(() -> new PaymentMethodNotFoundException(paymentMethodId));
@@ -70,6 +73,7 @@ public class PaymentMethodService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#userId")
     public void removePaymentMethod(UUID userId, UUID paymentMethodId) {
         PaymentMethod paymentMethod = paymentMethodRepository.findByIdAndUserId(paymentMethodId, userId)
                 .orElseThrow(() -> new PaymentMethodNotFoundException(paymentMethodId));
@@ -86,8 +90,6 @@ public class PaymentMethodService {
     }
 
     private void clearExistingDefault(UUID userId) {
-        paymentMethodRepository.findByUserId(userId).stream()
-                .filter(PaymentMethod::isDefault)
-                .forEach(pm -> pm.setDefault(false));
+        paymentMethodRepository.clearDefault(userId);
     }
 }

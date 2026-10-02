@@ -8,6 +8,10 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/wayfare_rider
     username: ${DB_USERNAME:wayfare}
     password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -59,10 +63,11 @@ management:
       # reach PostgreSQL stops being routed to instead of returning 500s.
       probes:
         enabled: true
-  health:
-    # spring-boot-starter-data-redis is on the classpath but nothing uses it
-    # yet (caching is still a TODO), so its health indicator would report DOWN
-    # against a Redis this service never connects to — and drag the whole
-    # endpoint down with it. Re-enable this alongside the first @Cacheable.
-    redis:
-      enabled: false
+
+wayfare:
+  storage:
+    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
+    # Address clients use; presigned URLs are signed for this host.
+    public-endpoint: ${STORAGE_PUBLIC_ENDPOINT:http://localhost:9000}
+    access-key: ${STORAGE_ACCESS_KEY:wayfare}
+    secret-key: ${STORAGE_SECRET_KEY:wayfare-secret}

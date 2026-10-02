@@ -19,7 +19,14 @@ public class GatewaySecurityConfig {
                         .pathMatchers(
                                 "/auth/register",
                                 "/auth/login",
-                                "/actuator/health/**"
+                                "/actuator/health/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/webjars/**",
+                                "/v3/api-docs/**",
+                                "/auth-service/v3/api-docs",
+                                "/rider-service/v3/api-docs",
+                                "/driver-service/v3/api-docs"
                         ).permitAll()
                         .anyExchange().authenticated()
                 )
