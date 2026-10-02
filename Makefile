@@ -10,11 +10,15 @@
 MVN     := ./mvnw
 COMPOSE := docker compose
 SKIP    := -DskipTests
-SERVICES := wayfare-config-server wayfare-server-discovery wayfare-auth-service \
-            wayfare-rider-service wayfare-driver-service wayfare-api-gateway
+SERVICES ?= $(shell $(COMPOSE) config --services | grep -E 'wayfare-')
 
 define need_svc
-	@test -n "$(svc)" || { echo "usage: make $@ svc=<service>"; echo "services: $(SERVICES)"; exit 1; }
+	@test -n "$(svc)" || { \
+		echo "usage: make $@ svc=<service>"; \
+		echo "services:"; \
+		for s in $(SERVICES); do echo "  - $$s"; done; \
+		exit 1; \
+	}
 endef
 
 .DEFAULT_GOAL := help
