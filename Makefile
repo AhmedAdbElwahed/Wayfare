@@ -5,6 +5,7 @@
 #   make rebuild svc=wayfare-auth-service   reship one service
 #   make logs svc=wayfare-api-gateway     tail one service
 #   make minio                           MinIO console URL + credentials
+#   make grafana                         Grafana URL (traces, logs, metrics)
 #   make clean                           stop, drop DB + MinIO volumes, mvn clean
 
 MVN     := ./mvnw
@@ -22,7 +23,7 @@ define need_svc
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help package up down restart rebuild logs ps db minio clean
+.PHONY: help package up down restart rebuild logs ps db minio grafana clean
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -59,6 +60,9 @@ db: ## Open a psql shell on the dev database
 minio: ## Show the MinIO console URL and credentials
 	@echo "console: http://localhost:$${MINIO_CONSOLE_PORT:-9001}   user: wayfare   password: wayfare-secret"
 	@echo "S3 API:  http://localhost:$${MINIO_PORT:-9000}"
+
+grafana: ## Show the Grafana URL (Explore -> Tempo / Loki / Mimir)
+	@echo "grafana: http://localhost:$${GRAFANA_PORT:-3000}   (anonymous admin, dev only)"
 
 clean: ## Stop the stack, drop the DB and MinIO volumes, and mvn clean
 	$(COMPOSE) down -v

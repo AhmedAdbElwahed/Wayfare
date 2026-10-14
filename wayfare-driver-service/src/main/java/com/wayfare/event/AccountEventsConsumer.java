@@ -1,5 +1,6 @@
 package com.wayfare.event;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.springframework.context.annotation.Bean;
@@ -25,11 +26,12 @@ public class AccountEventsConsumer {
     @Bean
     public Consumer<AccountRegisteredEvent> onAccountRegistered(DriverService driverService) {
         return event -> {
-            if (!DRIVER_ROLE.equals(event.role())) {
+            if (!DRIVER_ROLE.equals(event.getRole())) {
                 return; // riders belong to rider-service
             }
-            if (driverService.ensureDriver(event.accountId(), event.email())) {
-                log.info("Provisioned driver {}", event.accountId());
+            UUID accountId = UUID.fromString(event.getAccountId());
+            if (driverService.ensureDriver(accountId, event.getEmail())) {
+                log.info("Provisioned driver {}", accountId);
             }
         };
     }

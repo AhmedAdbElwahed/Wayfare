@@ -1,0 +1,56 @@
+# Tempo, single-binary mode, traces stored in MinIO (bucket `tempo`).
+# Dev credentials; use a dedicated MinIO user per backend outside local dev.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  max_block_duration: 2m   # flush to MinIO quickly so it is visible while learning
+
+compactor:
+  compaction:
+    block_retention: 24h
+
+# Derives service-graph and span metrics from traces and pushes them to Mimir,
+# which is what lets Grafana draw the service map.
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://mimir:9009/api/v1/push
+        send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces
+
+storage:
+  trace:
+    backend: s3
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+    s3:
+      bucket: tempo
+      endpoint: minio:9000
+      access_key: ${MINIO_ROOT_USER:wayfare}
+      secret_key: ${MINIO_ROOT_PASSWORD:wayfare-secret}
+      insecure: true
+      forcepathstyle: true
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics]

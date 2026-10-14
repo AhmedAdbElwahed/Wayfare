@@ -73,8 +73,16 @@ public class ProfileService {
         }
         profile.setName(request.name());
         profile.setPhone(request.phone());
-        profile.setPhotoUrl(request.photoUrl());
         profile.setLocale(request.locale());
+        return profileRepository.save(profile);
+    }
+
+    /** Only the upload flow sets the photo; it is deliberately not part of {@link UpdateProfileRequest}. */
+    @Transactional
+    @CacheEvict(cacheNames = "riders", key = "#id")
+    public Profile updatePhoto(UUID id, String photoUrl) {
+        Profile profile = profileRepository.findById(id).orElseThrow(() -> new ProfileNotFoundException(id));
+        profile.setPhotoUrl(photoUrl);
         return profileRepository.save(profile);
     }
 
@@ -87,9 +95,6 @@ public class ProfileService {
         }
         if (request.phone() != null) {
             profile.setPhone(request.phone());
-        }
-        if (request.photoUrl() != null) {
-            profile.setPhotoUrl(request.photoUrl());
         }
         if (request.locale() != null) {
             profile.setLocale(request.locale());

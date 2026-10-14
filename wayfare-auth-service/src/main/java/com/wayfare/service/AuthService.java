@@ -6,7 +6,9 @@ import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.exception.EmailAlreadyRegisteredException;
 import com.wayfare.exception.InvalidCredentialsException;
+import com.wayfare.exception.RoleNotSelfServiceException;
 import com.wayfare.event.AccountRegisteredEvent;
+import com.wayfare.event.ProtoTimes;
 import com.wayfare.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,6 +32,9 @@ public class AuthService {
 
     @Transactional
     public Account register(RegisterRequest request) {
+        if (!request.role().isSelfService()) {
+            throw new RoleNotSelfServiceException(request.role());
+        }
         if (accountRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyRegisteredException(request.email());
         }
@@ -40,8 +45,12 @@ public class AuthService {
         Account saved = accountRepository.save(account);
         // Handed to AccountEventPublisher, which holds it until this
         // transaction commits before putting it on the broker.
-        eventPublisher.publishEvent(new AccountRegisteredEvent(
-                saved.getId(), saved.getEmail(), saved.getRole().name(), saved.getCreatedAt()));
+        eventPublisher.publishEvent(AccountRegisteredEvent.newBuilder()
+                .setAccountId(saved.getId().toString())
+                .setEmail(saved.getEmail())
+                .setRole(saved.getRole().name())
+                .setRegisteredAt(ProtoTimes.toTimestamp(saved.getCreatedAt()))
+                .build());
         return saved;
     }
 

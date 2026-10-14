@@ -57,8 +57,8 @@ class PaymentMethodDefaultIT {
     @Test
     void databaseRejectsTwoDefaultsForOneRider() {
         UUID user = UUID.randomUUID();
-        repo.saveAndFlush(new PaymentMethod(null, user, "a", "visa", "4242", true));
-        assertThatThrownBy(() -> repo.saveAndFlush(new PaymentMethod(null, user, "b", "visa", "1111", true)))
+        repo.saveAndFlush(new PaymentMethod(null, user, "a", "visa", "4242", true, null));
+        assertThatThrownBy(() -> repo.saveAndFlush(new PaymentMethod(null, user, "b", "visa", "1111", true, null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

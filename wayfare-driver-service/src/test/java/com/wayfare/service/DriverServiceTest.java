@@ -99,7 +99,7 @@ class DriverServiceTest {
         assertThat(approved.getApprovedAt()).isNotNull();
         ArgumentCaptor<DriverStatusChangedEvent> captor = ArgumentCaptor.forClass(DriverStatusChangedEvent.class);
         verify(events).publishEvent(captor.capture());
-        assertThat(captor.getValue().status()).isEqualTo("APPROVED");
+        assertThat(captor.getValue().getStatus()).isEqualTo("APPROVED");
     }
 
     @Test
@@ -129,7 +129,7 @@ class DriverServiceTest {
         assertThat(driver.getStatus()).isEqualTo(DriverStatus.SUSPENDED);
         ArgumentCaptor<DriverStatusChangedEvent> captor = ArgumentCaptor.forClass(DriverStatusChangedEvent.class);
         verify(events).publishEvent(captor.capture());
-        assertThat(captor.getValue().reason()).isEqualTo("document_expired");
+        assertThat(captor.getValue().getReason()).isEqualTo("document_expired");
     }
 
     @Test

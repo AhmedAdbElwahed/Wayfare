@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package wayfare.event;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.wayfare.event";
+option java_multiple_files = true;
+option java_outer_classname = "AccountRegisteredEventProto";
+
+// Published to the `account.events` topic the moment an account is created.
+//
+// Evolve additively only: add new fields with new numbers. Never reuse or
+// renumber a field, and `reserved` the number of any field you remove; the
+// Schema Registry rejects incompatible changes (BACKWARD compatibility).
+message AccountRegisteredEvent {
+  // UUID string; the same value ends up as the JWT `sub`, which is what lets
+  // rider-service key its profile row by it directly.
+  string account_id = 1;
+  string email = 2;
+  // AccountRole name (e.g. RIDER). A plain string rather than an enum: a role
+  // added by a future auth-service release must be ignored by an older
+  // consumer, not fail to deserialize every message on the topic.
+  string role = 3;
+  google.protobuf.Timestamp registered_at = 4;
+}

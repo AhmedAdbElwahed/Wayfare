@@ -56,7 +56,7 @@ class ProfileCachingTest {
         service.getRider(id);
         verify(repo, times(1)).findById(id);
 
-        service.updateProfile(id, new UpdateProfileRequest("Bea", null, null, null));
+        service.updateProfile(id, new UpdateProfileRequest("Bea", null, null));
         // updateProfile itself reads once; the next getRider must reload.
         service.getRider(id);
         verify(repo, times(3)).findById(id);

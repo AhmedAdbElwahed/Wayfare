@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package wayfare.event;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.wayfare.event";
+option java_multiple_files = true;
+option java_outer_classname = "DriverStatusChangedEventProto";
+
+// Published to `driver.events` whenever a driver's eligibility to take trips
+// changes (APPROVED or SUSPENDED). One message with a status field rather than
+// a type per transition, so consumers need no type discrimination.
+message DriverStatusChangedEvent {
+  // UUID string.
+  string driver_id = 1;
+  string status = 2;
+  // Only set for suspensions (e.g. `document_expired`); `optional` so a
+  // consumer can tell "no reason" from an empty one via hasReason().
+  optional string reason = 3;
+  google.protobuf.Timestamp occurred_at = 4;
+}

@@ -6,6 +6,7 @@ import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +34,12 @@ public class Profile {
     private String locale;
 
     private UUID defaultPaymentId;
+
+    // Optimistic lock: a concurrent PATCH fails with 409 instead of silently
+    // overwriting. Wrapper type so a not-yet-saved row (null) is seen as new
+    // even though its id is assigned by the caller.
+    @Version
+    private Long version;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

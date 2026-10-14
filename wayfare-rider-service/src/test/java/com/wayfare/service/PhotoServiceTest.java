@@ -1,6 +1,5 @@
 package com.wayfare.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -13,10 +12,8 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.wayfare.domain.Profile;
-import com.wayfare.dto.UpdateProfileRequest;
 import com.wayfare.storage.InvalidUploadException;
 import com.wayfare.storage.ObjectStorage;
 
@@ -32,14 +29,12 @@ class PhotoServiceTest {
         String key = "riders/" + id + "/photo/a.jpg";
         when(storage.mediaBucket()).thenReturn("media");
         when(storage.publicUrl(key)).thenReturn("http://cdn/media/" + key);
-        when(profiles.updateProfile(eq(id), any())).thenReturn(new Profile(id));
+        when(profiles.updatePhoto(eq(id), any())).thenReturn(new Profile(id));
 
         service.setPhoto(id, key);
 
         verify(storage).requireUploaded(eq("media"), eq(key), eq("riders/" + id + "/photo/"), anyLong(), any());
-        ArgumentCaptor<UpdateProfileRequest> req = ArgumentCaptor.forClass(UpdateProfileRequest.class);
-        verify(profiles).updateProfile(eq(id), req.capture());
-        assertThat(req.getValue().photoUrl()).isEqualTo("http://cdn/media/" + key);
+        verify(profiles).updatePhoto(id, "http://cdn/media/" + key);
     }
 
     @Test
@@ -50,6 +45,6 @@ class PhotoServiceTest {
 
         assertThatThrownBy(() -> service.setPhoto(id, "riders/other/photo/x.jpg"))
                 .isInstanceOf(InvalidUploadException.class);
-        verify(profiles, never()).updateProfile(any(), any());
+        verify(profiles, never()).updatePhoto(any(), any());
     }
 }
