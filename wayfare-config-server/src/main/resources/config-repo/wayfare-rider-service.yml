@@ -36,6 +36,13 @@ spring:
       kafka:
         binder:
           brokers: ${KAFKA_BROKERS:localhost:9092}
+        bindings:
+          onAccountRegistered-in-0:
+            consumer:
+              configuration:
+                value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+                # Without this the deserializer returns a DynamicMessage.
+                specific.protobuf.value.type: com.wayfare.event.AccountRegisteredEvent
       bindings:
         # Binding name must match the @Bean method name in
         # AccountEventsConsumer — that's how the function gets bound.
@@ -48,6 +55,8 @@ spring:
           group: rider-service
           consumer:
             max-attempts: 3
+            # The Confluent deserializer does the decoding.
+            use-native-decoding: true
 
 management:
   endpoints:

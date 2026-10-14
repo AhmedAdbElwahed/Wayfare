@@ -44,6 +44,9 @@ spring:
     stream:
       kafka:
         binder:
+          configuration:
+            # Used by the Protobuf (de)serializers configured per binding.
+            schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
           # Producer and consumer observations, so the traceparent travels in
           # the Kafka record headers and the consumer joins the producer's trace.
           enable-observation: true

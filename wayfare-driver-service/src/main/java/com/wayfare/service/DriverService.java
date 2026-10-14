@@ -18,6 +18,7 @@ import com.wayfare.dto.DocumentUploadRequest;
 import com.wayfare.dto.UpdateDriverProfileRequest;
 import com.wayfare.dto.VehicleRequest;
 import com.wayfare.event.DriverStatusChangedEvent;
+import com.wayfare.event.ProtoTimes;
 import com.wayfare.exception.DocumentNotFoundException;
 import com.wayfare.exception.DriverNotFoundException;
 import com.wayfare.exception.InvalidDriverStateException;
@@ -180,7 +181,11 @@ public class DriverService {
         }
         driver.setStatus(DriverStatus.APPROVED);
         driver.setApprovedAt(now);
-        events.publishEvent(new DriverStatusChangedEvent(driverId, DriverStatus.APPROVED.name(), null, now));
+        events.publishEvent(DriverStatusChangedEvent.newBuilder()
+                .setDriverId(driverId.toString())
+                .setStatus(DriverStatus.APPROVED.name())
+                .setOccurredAt(ProtoTimes.toTimestamp(now))
+                .build());
         return driver;
     }
 
@@ -191,7 +196,14 @@ public class DriverService {
             return driver; // already suspended: keep it idempotent
         }
         driver.setStatus(DriverStatus.SUSPENDED);
-        events.publishEvent(new DriverStatusChangedEvent(driverId, DriverStatus.SUSPENDED.name(), reason, Instant.now()));
+        var event = DriverStatusChangedEvent.newBuilder()
+                .setDriverId(driverId.toString())
+                .setStatus(DriverStatus.SUSPENDED.name())
+                .setOccurredAt(ProtoTimes.toTimestamp(Instant.now()));
+        if (reason != null) {
+            event.setReason(reason); // a null would throw; unset means "no reason"
+        }
+        events.publishEvent(event.build());
         return driver;
     }
 

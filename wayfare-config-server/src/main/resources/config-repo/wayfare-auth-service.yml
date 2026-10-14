@@ -23,10 +23,18 @@ spring:
             # consumer is idempotent anyway, but cheap to get right at source.
             enable.idempotence: true
             acks: all
+        bindings:
+          accountRegistered-out-0:
+            producer:
+              configuration:
+                value.serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       bindings:
         accountRegistered-out-0:
           destination: account.events
-          contentType: application/json
+          producer:
+            # The Confluent serializer does the encoding (and registers the
+            # schema); without this Spring converts the payload first.
+            use-native-encoding: true
 
 jwt:
   issuer: http://localhost:8081/auth

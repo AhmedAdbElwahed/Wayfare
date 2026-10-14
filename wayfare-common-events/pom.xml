@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.wayfare</groupId>
@@ -10,8 +10,74 @@
     </parent>
 
     <artifactId>wayfare-common-events</artifactId>
-    <description>Domain event records shared between services. Plain jar, no Spring dependencies.</description>
+    <description>Event contract shared between services: .proto schemas, the classes generated from them, and the Confluent Protobuf serializer that talks to the Schema Registry.</description>
 
-    <!-- Deliberately dependency-free and not repackaged: it is pulled into each
-         service's fat jar as an ordinary library. -->
+    <!-- Not repackaged: it is pulled into each service's fat jar as an ordinary library. -->
+
+    <properties>
+        <!-- Keep in step with the cp-schema-registry image in docker-compose.yml.
+             8.x is needed for the protobuf 4.x runtime that Spring Boot (and its OTLP
+             metrics registry) manages; 7.9 only works on protobuf 3.25. -->
+        <confluent.version>8.3.2</confluent.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-protobuf-serializer</artifactId>
+            <version>${confluent.version}</version>
+        </dependency>
+        <!-- Supplied by the services' Kafka binder at runtime. -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generates the Java classes from src/main/protobuf. Downloads a
+                 protoc matching the protobuf-java runtime on the classpath. -->
+            <plugin>
+                <groupId>io.github.ascopes</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <protocVersion>${protobuf-java.version}</protocVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- for dev only to make sure the proto files are seen as source files -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-protobuf-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/protobuf</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

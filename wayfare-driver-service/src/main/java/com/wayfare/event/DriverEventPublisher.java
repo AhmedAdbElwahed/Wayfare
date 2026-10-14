@@ -6,7 +6,6 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import lombok.RequiredArgsConstructor;
-
 /**
  * Publishes to {@code driver.events} only after the status change has
  * committed, so the topic never announces a transition that rolled back. Same
