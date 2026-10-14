@@ -45,8 +45,8 @@ storage:
     s3:
       bucket: tempo
       endpoint: minio:9000
-      access_key: wayfare
-      secret_key: wayfare-secret
+      access_key: ${MINIO_ROOT_USER:wayfare}
+      secret_key: ${MINIO_ROOT_PASSWORD:wayfare-secret}
       insecure: true
       forcepathstyle: true
 

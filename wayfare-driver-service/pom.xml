@@ -20,6 +20,11 @@
     <dependencies>
         <dependency>
             <groupId>com.wayfare</groupId>
+            <artifactId>wayfare-common-security</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wayfare</groupId>
             <artifactId>wayfare-common-tracing</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

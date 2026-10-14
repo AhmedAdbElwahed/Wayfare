@@ -6,6 +6,7 @@ import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.exception.EmailAlreadyRegisteredException;
 import com.wayfare.exception.InvalidCredentialsException;
+import com.wayfare.exception.RoleNotSelfServiceException;
 import com.wayfare.event.AccountRegisteredEvent;
 import com.wayfare.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,9 @@ public class AuthService {
 
     @Transactional
     public Account register(RegisterRequest request) {
+        if (!request.role().isSelfService()) {
+            throw new RoleNotSelfServiceException(request.role());
+        }
         if (accountRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyRegisteredException(request.email());
         }

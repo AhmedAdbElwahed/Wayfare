@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.wayfare.domain.Profile;
-import com.wayfare.dto.UpdateProfileRequest;
 import com.wayfare.storage.ObjectStorage;
 import com.wayfare.storage.PresignedUpload;
 
@@ -40,10 +39,9 @@ public class PhotoService {
         return storage.presignUpload(storage.mediaBucket(), key, UPLOAD_TTL);
     }
 
-    /** Goes through updateProfile so the cached profile is evicted. */
+    /** Goes through updatePhoto so the cached profile is evicted. */
     public Profile setPhoto(UUID riderId, String objectKey) {
         storage.requireUploaded(storage.mediaBucket(), objectKey, prefix(riderId), MAX_BYTES, TYPES);
-        return profileService.updateProfile(riderId,
-                new UpdateProfileRequest(null, null, storage.publicUrl(objectKey), null));
+        return profileService.updatePhoto(riderId, storage.publicUrl(objectKey));
     }
 }

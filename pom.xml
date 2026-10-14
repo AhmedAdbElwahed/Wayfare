@@ -17,6 +17,7 @@
 		<module>wayfare-common-events</module>
 		<module>wayfare-common-storage</module>
 		<module>wayfare-common-tracing</module>
+		<module>wayfare-common-security</module>
 		<module>wayfare-config-server</module>
 		<module>wayfare-server-discovery</module>
 		<module>wayfare-auth-service</module>

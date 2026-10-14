@@ -69,7 +69,7 @@ class RiderRoleAuthorizationTest {
 
     @Test
     void roleClaimIsMappedToAuthority() {
-        var converter = new SecurityConfig().jwtAuthenticationConverter();
+        var converter = JwtRoleConverter.create();
         var jwt = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("t")
                 .header("alg", "none").subject(ID.toString()).claim("role", "DRIVER").build();
         org.assertj.core.api.Assertions.assertThat(converter.convert(jwt).getAuthorities())
