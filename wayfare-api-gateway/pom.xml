@@ -19,6 +19,11 @@
     </properties>
 
     <dependencies>
+		<dependency>
+			<groupId>com.wayfare</groupId>
+			<artifactId>wayfare-common-tracing</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
         <!-- API Gateway (reactive, WebFlux-based) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

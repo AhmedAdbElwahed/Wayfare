@@ -3,6 +3,14 @@
 # *service* names (wayfare-auth-service, postgres, ...) are real hostnames
 # resolved by Docker's embedded DNS — that's what lets config-repo/*.yml
 # point AUTH_SERVICE_URL/DB_HOST/etc at a name instead of localhost.
+
+# OTLP destinations for every Wayfare service. Compose service names resolve on
+# the compose network; the config-repo defaults (localhost) cover IDE runs.
+x-otel-env: &otel-env
+  OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
+  OTLP_LOGS_ENDPOINT: http://loki:3100/otlp/v1/logs
+  OTLP_METRICS_ENDPOINT: http://mimir:9009/otlp/v1/metrics
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -34,7 +42,7 @@ services:
   minio:
     # S3-compatible object store for driver documents (private bucket) and
     # profile photos (public-read bucket). Buckets are created by the services
-    # at startup. Console: http://localhost:9001 (wayfare / wayfare-secret).
+    # at startup (the observability buckets come from minio-init). Console: http://localhost:9001 (wayfare / wayfare-secret).
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
@@ -79,6 +87,76 @@ services:
       retries: 12
       start_period: 20s
 
+  # --- Observability: LGTM (Loki, Grafana, Tempo, Mimir) on MinIO ------------
+  # Optional: the services run without it, they just can't export. Services
+  # send OTLP straight to each backend (see OTLP_* in x-otel-env).
+
+  minio-init:
+    # One-shot: Tempo/Loki/Mimir don't create their own buckets (the services
+    # do, in Java), so create them here. The backends wait for this to finish.
+    # Reuses the minio image (it ships `mc`) rather than pulling minio/mc.
+    image: quay.io/minio/minio:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mc alias set local http://minio:9000 wayfare wayfare-secret &&
+        mc mb --ignore-existing local/tempo local/loki local/mimir-blocks local/mimir-ruler local/mimir-alertmanager
+    restart: "no"
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./docker/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"   # query API
+      - "4317:4317"                  # OTLP gRPC
+      - "4318:4318"                  # OTLP HTTP
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  loki:
+    image: grafana/loki:3.3.0
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./docker/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  mimir:
+    image: grafana/mimir:2.14.0
+    command: ["-config.file=/etc/mimir/mimir.yaml"]
+    volumes:
+      - ./docker/mimir/mimir.yaml:/etc/mimir/mimir.yaml:ro
+      - mimir-data:/data
+    ports:
+      - "${MIMIR_PORT:-9009}:9009"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      # Dev only: anonymous admin so there is nothing to log in to.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [loki, tempo, mimir]
+
   wayfare-config-server:
     build:
       context: .
@@ -115,6 +193,7 @@ services:
       context: .
       dockerfile: wayfare-auth-service/Dockerfile
     environment:
+      <<: *otel-env
       CONFIG_SERVER_URL: http://wayfare-config-server:8888
       EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
       DB_HOST: postgres
@@ -146,6 +225,7 @@ services:
       context: .
       dockerfile: wayfare-rider-service/Dockerfile
     environment:
+      <<: *otel-env
       CONFIG_SERVER_URL: http://wayfare-config-server:8888
       EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
       DB_HOST: postgres
@@ -187,6 +267,7 @@ services:
       context: .
       dockerfile: wayfare-driver-service/Dockerfile
     environment:
+      <<: *otel-env
       CONFIG_SERVER_URL: http://wayfare-config-server:8888
       EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
       DB_HOST: postgres
@@ -225,6 +306,7 @@ services:
       context: .
       dockerfile: wayfare-api-gateway/Dockerfile
     environment:
+      <<: *otel-env
       CONFIG_SERVER_URL: http://wayfare-config-server:8888
       EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
       AUTH_SERVICE_URL: http://wayfare-auth-service:8081
@@ -244,3 +326,7 @@ services:
 volumes:
   pgdata:
   miniodata:
+  tempo-data:
+  loki-data:
+  mimir-data:
+  grafana-data:

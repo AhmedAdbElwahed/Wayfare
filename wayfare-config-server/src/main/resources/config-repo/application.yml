@@ -11,3 +11,39 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+# --- Observability (OpenTelemetry starter -> Tempo / Loki / Mimir) -----------
+# Property names are Spring Boot 4.1's. Every endpoint can be overridden by
+# env var; the defaults reach the published ports of the compose stack, so a
+# service run from the IDE exports to it too. Services run fine without it.
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0} # 1.0 is dev only
+  opentelemetry:
+    resource-attributes:
+      # How Tempo, Loki and Mimir tell the services apart.
+      "[service.name]": ${spring.application.name}
+      "[deployment.environment.name]": ${DEPLOY_ENV:local}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTLP_LOGS_ENDPOINT:http://localhost:3100/otlp/v1/logs}
+  otlp:
+    metrics:
+      export:
+        url: ${OTLP_METRICS_ENDPOINT:http://localhost:9009/otlp/v1/metrics}
+        step: 15s
+
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          # Producer and consumer observations, so the traceparent travels in
+          # the Kafka record headers and the consumer joins the producer's trace.
+          enable-observation: true

@@ -20,6 +20,10 @@ spring:
           # compose service name (resolved by Docker's embedded DNS, nothing
           # to do with Eureka/lb://); on bare host it defaults to localhost.
           jwk-set-uri: ${AUTH_SERVICE_URL:http://localhost:8081}/auth/.well-known/jwks.json
+  # The gateway is reactive: carry the trace context across Reactor operators so
+  # spans stay in one trace instead of splitting per thread.
+  reactor:
+    context-propagation: auto
   cloud:
     gateway:
       server:
