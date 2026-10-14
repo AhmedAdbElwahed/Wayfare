@@ -1,4 +1,4 @@
-# Wayfare
+# Wayfare ( This Project to learn about event-driven and micro services grpc and OPTL )  
 
 A ride-hailing backend built as a multi-module Spring Boot 4 / Spring Cloud project.
 Phase 0 (foundations) and Phase 1 (identity and accounts) are in place; trips,
@@ -183,6 +183,3 @@ The stack is optional: services run without it.
 - No CI/CD pipeline.
 - Dev defaults (MinIO credentials, anonymous Grafana admin, 100% trace
   sampling) are not safe for production.
-
-A fuller, dated status is in `my-docs/project-status.md` (a local folder; it is
-git-ignored).
