@@ -59,4 +59,15 @@ public class Account {
         this.passwordHash = passwordHash;
         this.role = role;
     }
+
+    /**
+     * Soft delete: the row stays (so a lost erasure event can be replayed) but
+     * can no longer log in, and the email address and credentials are scrubbed
+     * so the address can be registered again.
+     */
+    public void markDeleted(String unusablePasswordHash) {
+        this.status = AccountStatus.DELETED;
+        this.email = "deleted-" + id + "@wayfare.invalid";
+        this.passwordHash = unusablePasswordHash;
+    }
 }

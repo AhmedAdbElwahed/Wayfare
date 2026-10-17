@@ -36,6 +36,12 @@ spring:
                 value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
                 # Without this the deserializer returns a DynamicMessage.
                 specific.protobuf.value.type: com.wayfare.event.AccountRegisteredEvent
+          onAccountDeleted-in-0:
+            consumer:
+              enable-dlq: true
+              configuration:
+                value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+                specific.protobuf.value.type: com.wayfare.event.AccountDeletedEvent
           driverEvents-out-0:
             producer:
               configuration:
@@ -44,6 +50,12 @@ spring:
         # Binding name must match the @Bean method name in AccountEventsConsumer.
         onAccountRegistered-in-0:
           destination: account.events
+          group: driver-service
+          consumer:
+            max-attempts: 3
+            use-native-decoding: true
+        onAccountDeleted-in-0:
+          destination: account.deleted
           group: driver-service
           consumer:
             max-attempts: 3

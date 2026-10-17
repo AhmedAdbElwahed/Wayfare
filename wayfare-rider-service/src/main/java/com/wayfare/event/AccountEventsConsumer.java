@@ -1,6 +1,7 @@
 package com.wayfare.event;
 
 import com.wayfare.service.ProfileService;
+import com.wayfare.service.RiderErasureService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +45,25 @@ public class AccountEventsConsumer {
             boolean created = profileService.ensureProfile(accountId);
             if (created) {
                 log.info("Provisioned profile for rider {}", accountId);
+            }
+        };
+    }
+
+    /**
+     * Erases the rider's data when their account is deleted. Binding name is
+     * {@code onAccountDeleted-in-0} (topic {@code account.deleted}). Redelivery
+     * is harmless: {@code erase} is idempotent. Failures propagate so the
+     * message is retried and then dead-lettered rather than silently dropped.
+     */
+    @Bean
+    public Consumer<AccountDeletedEvent> onAccountDeleted(RiderErasureService erasure) {
+        return event -> {
+            if (!RIDER_ROLE.equals(event.getRole())) {
+                return; // driver-service erases drivers
+            }
+            UUID accountId = UUID.fromString(event.getAccountId());
+            if (erasure.erase(accountId)) {
+                log.info("Erased data of deleted rider account {}", accountId);
             }
         };
     }

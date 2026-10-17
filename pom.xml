@@ -18,12 +18,15 @@
 		<module>wayfare-common-storage</module>
 		<module>wayfare-common-tracing</module>
 		<module>wayfare-common-security</module>
+		<module>wayfare-common-grpc</module>
 		<module>wayfare-config-server</module>
 		<module>wayfare-server-discovery</module>
 		<module>wayfare-auth-service</module>
 		<module>wayfare-api-gateway</module>
 		<module>wayfare-rider-service</module>
 		<module>wayfare-driver-service</module>
+		<module>wayfare-matching-service</module>
+		<module>wayfare-trip-service</module>
 	</modules>
 	<name>wayfare</name>
 	<description />

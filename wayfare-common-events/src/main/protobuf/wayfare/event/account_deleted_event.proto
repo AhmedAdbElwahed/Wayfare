@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package wayfare.event;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.wayfare.event";
+option java_multiple_files = true;
+option java_outer_classname = "AccountDeletedEventProto";
+
+// Published to the `account.deleted` topic (not `account.events`, whose
+// consumers are typed to AccountRegisteredEvent) after an account is deleted.
+// Every service holding data keyed by this account id must erase it, and must
+// do so idempotently: delivery is at-least-once.
+message AccountDeletedEvent {
+  // UUID string; the same value as the JWT `sub` and the key of rider/driver rows.
+  string account_id = 1;
+  // AccountRole name. A plain string for the same reason as in
+  // AccountRegisteredEvent; consumers ignore roles that aren't theirs.
+  string role = 2;
+  google.protobuf.Timestamp deleted_at = 3;
+}

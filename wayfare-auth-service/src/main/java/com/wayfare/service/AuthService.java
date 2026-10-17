@@ -1,15 +1,21 @@
 package com.wayfare.service;
 
 import com.wayfare.domain.Account;
+import com.wayfare.domain.AccountRole;
 import com.wayfare.domain.AccountStatus;
+import com.wayfare.dto.DeleteAccountRequest;
 import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.exception.EmailAlreadyRegisteredException;
 import com.wayfare.exception.InvalidCredentialsException;
 import com.wayfare.exception.RoleNotSelfServiceException;
+import com.wayfare.event.AccountDeletedEvent;
 import com.wayfare.event.AccountRegisteredEvent;
 import com.wayfare.event.ProtoTimes;
 import com.wayfare.repository.AccountRepository;
+import java.time.Instant;
+import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -67,5 +73,32 @@ public class AuthService {
                 .filter(a -> a.getStatus() == AccountStatus.ACTIVE)
                 .orElseThrow(InvalidCredentialsException::new);
         return jwtService.issueToken(account);
+    }
+
+    /**
+     * Deletes the caller's own account after re-checking their credentials
+     * (same generic failure as login, so nothing about other accounts leaks),
+     * then announces it so rider/driver-service erase their data. The event
+     * is published after commit, like AccountRegistered — see
+     * AccountDeletedEventPublisher for the lost-event caveat.
+     */
+    @Transactional
+    public void deleteAccount(DeleteAccountRequest request) {
+        Account account = accountRepository.findByEmail(request.email())
+                .filter(a -> passwordEncoder.matches(request.password(), a.getPasswordHash()))
+                .filter(a -> a.getStatus() != AccountStatus.DELETED)
+                .orElseThrow(InvalidCredentialsException::new);
+        if (!account.getRole().isSelfService()) {
+            throw new RoleNotSelfServiceException(account.getRole());
+        }
+        AccountRole role = account.getRole();
+        // A random value nobody knows: the row can never authenticate again.
+        account.markDeleted(passwordEncoder.encode(UUID.randomUUID().toString()));
+        accountRepository.save(account);
+        eventPublisher.publishEvent(AccountDeletedEvent.newBuilder()
+                .setAccountId(account.getId().toString())
+                .setRole(role.name())
+                .setDeletedAt(ProtoTimes.toTimestamp(Instant.now()))
+                .build());
     }
 }

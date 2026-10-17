@@ -11,13 +11,16 @@ import java.util.concurrent.TimeUnit;
 import io.minio.BucketExistsArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
+import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
+import io.minio.Result;
 import io.minio.RemoveObjectArgs;
 import io.minio.SetBucketPolicyArgs;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
 import io.minio.http.Method;
+import io.minio.messages.Item;
 
 /**
  * Thin wrapper over the MinIO client. Files never flow through the services:
@@ -103,6 +106,27 @@ public class ObjectStorage {
             internal.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
         } catch (Exception e) {
             throw new StorageException("delete failed for " + key, e);
+        }
+    }
+
+    /**
+     * Removes every object under {@code prefix} (which should end in "/").
+     * Returns how many were removed; zero when there was nothing, so it is safe
+     * to repeat. Used for account erasure.
+     */
+    public int deleteByPrefix(String bucket, String prefix) {
+        try {
+            int removed = 0;
+            for (Result<Item> result : internal.listObjects(
+                    ListObjectsArgs.builder().bucket(bucket).prefix(prefix).recursive(true).build())) {
+                delete(bucket, result.get().objectName());
+                removed++;
+            }
+            return removed;
+        } catch (StorageException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageException("delete by prefix failed for " + prefix, e);
         }
     }
 

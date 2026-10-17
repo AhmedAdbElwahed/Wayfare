@@ -15,6 +15,10 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, UU
 
     List<PaymentMethod> findByUserId(UUID userId);
 
+    @Modifying
+    @Query("delete from PaymentMethod p where p.userId = :userId")
+    int deleteAllByUserId(@Param("userId") UUID userId);
+
     Optional<PaymentMethod> findByIdAndUserId(UUID id, UUID userId);
 
     /**

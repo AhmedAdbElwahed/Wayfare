@@ -123,6 +123,12 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream-binder-kafka</artifactId>
         </dependency>
+        <!-- Contract (.proto) and generated stubs shared with the callers -->
+        <dependency>
+            <groupId>com.wayfare</groupId>
+            <artifactId>wayfare-common-grpc</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <!-- gRPC server for internal calls -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -164,6 +170,11 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-inprocess</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

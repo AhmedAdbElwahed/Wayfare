@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package wayfare.rider.v1;
+
+option java_package = "com.wayfare.grpc.rider";
+option java_multiple_files = true;
+
+// Internal, service-to-service contract of wayfare-rider-service.
+// Evolve additively: new fields get new numbers; breaking changes go in a new `v2` package.
+service RiderService {
+  rpc GetProfile (GetProfileRequest) returns (ProfileResponse);
+  rpc ValidatePaymentMethod (ValidatePaymentMethodRequest) returns (ValidationResponse);
+}
+
+message GetProfileRequest {
+  // UUID string (the account id).
+  string rider_id = 1;
+}
+
+message ProfileResponse {
+  string rider_id = 1;
+  // Empty until the rider has completed their profile.
+  string name = 2;
+  string phone = 3;
+  string locale = 4;
+  optional string photo_url = 5;
+}
+
+message ValidatePaymentMethodRequest {
+  string rider_id = 1;
+}
+
+message ValidationResponse {
+  bool valid = 1;
+  // Set when invalid: PROFILE_NOT_FOUND, PROFILE_INCOMPLETE or NO_DEFAULT_METHOD.
+  string reason = 2;
+  optional string payment_method_id = 3;
+}

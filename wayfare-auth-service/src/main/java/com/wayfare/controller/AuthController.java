@@ -1,6 +1,7 @@
 package com.wayfare.controller;
 
 import com.wayfare.dto.AccountResponse;
+import com.wayfare.dto.DeleteAccountRequest;
 import com.wayfare.dto.LoginRequest;
 import com.wayfare.dto.RegisterRequest;
 import com.wayfare.dto.TokenResponse;
@@ -33,5 +34,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(new TokenResponse(authService.login(request)));
+    }
+
+    /**
+     * Irreversible. Requires a valid access token at the gateway AND the
+     * account's own credentials in the body, so a stolen token alone can't
+     * delete an account. Deliberately not keyed by an id in the path.
+     */
+    @PostMapping("/delete-account")
+    public ResponseEntity<Void> deleteAccount(@RequestBody @Valid DeleteAccountRequest request) {
+        authService.deleteAccount(request);
+        return ResponseEntity.noContent().build();
     }
 }

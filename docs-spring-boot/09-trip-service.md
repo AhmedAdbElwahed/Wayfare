@@ -70,13 +70,13 @@ domain event written to the outbox.
 
 ```mermaid
 flowchart LR
-    CMD[REST Commands<br/>POST /trips] --> H[TripCommandService<br/>@Transactional]
-    H --> PG[(PostgreSQL<br/>Spring Data JPA<br/>trips + trip_events + outbox)]
-    PG --> RELAY[OutboxRelay<br/>@Scheduled / Debezium]
-    RELAY --> K[(Kafka trip.events<br/>Spring Cloud Stream)]
-    K --> PROJ[TripProjector<br/>@Consumer bean]
-    PROJ --> MG[(MongoDB<br/>Spring Data MongoDB<br/>trips_read)]
-    QRY[REST Queries<br/>GET /trips] --> MG
+    CMD["REST Commands<br/>POST /trips"] --> H["TripCommandService<br/>@Transactional"]
+    H --> PG[("PostgreSQL<br/>Spring Data JPA<br/>trips + trip_events + outbox")]
+    PG --> RELAY["OutboxRelay<br/>@Scheduled / Debezium"]
+    RELAY --> K[("Kafka trip.events<br/>Spring Cloud Stream")]
+    K --> PROJ["TripProjector<br/>@Consumer bean"]
+    PROJ --> MG[("MongoDB<br/>Spring Data MongoDB<br/>trips_read")]
+    QRY["REST Queries<br/>GET /trips"] --> MG
 ```
 
 ---

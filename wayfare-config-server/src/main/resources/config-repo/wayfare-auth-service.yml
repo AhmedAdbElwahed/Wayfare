@@ -28,12 +28,20 @@ spring:
             producer:
               configuration:
                 value.serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
+          accountDeleted-out-0:
+            producer:
+              configuration:
+                value.serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       bindings:
         accountRegistered-out-0:
           destination: account.events
           producer:
             # The Confluent serializer does the encoding (and registers the
             # schema); without this Spring converts the payload first.
+            use-native-encoding: true
+        accountDeleted-out-0:
+          destination: account.deleted
+          producer:
             use-native-encoding: true
 
 jwt:
