@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package wayfare.event;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.wayfare.event";
+option java_multiple_files = true;
+option java_outer_classname = "MatchEventProto";
+
+// Published by the matching service to `match.events`; trip-service consumes it
+// and turns it into trip commands. Envelope + oneof for the same reason as TripEvent.
+message MatchEvent {
+  // UUID string.
+  string trip_id = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+
+  oneof outcome {
+    DriverMatched driver_matched = 10;
+    NoDriversAvailable no_drivers_available = 11;
+  }
+}
+
+message DriverMatched {
+  // UUID string.
+  string driver_id = 1;
+}
+
+message NoDriversAvailable {}

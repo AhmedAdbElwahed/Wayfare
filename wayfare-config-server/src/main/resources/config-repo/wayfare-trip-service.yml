@@ -1,0 +1,86 @@
+# Trip service configuration: PostgreSQL = write side, MongoDB = read side.
+
+server:
+  port: 8084
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/wayfare_trip
+    username: ${DB_USERNAME:wayfare}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mongodb:
+    uri: ${MONGO_URI:mongodb://localhost:27017/wayfare_trip}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_SERVICE_URL:http://localhost:8081}/auth/.well-known/jwks.json
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+        bindings:
+          tripEvents-out-0:
+            producer:
+              # Wait for the broker's ack so a failed send throws in the relay
+              # (and the outbox row stays unpublished) instead of being lost.
+              sync: true
+              configuration:
+                # The key is the trip id as text (keeps one trip on one partition).
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                # Registers the TripEvent schema in the Schema Registry and prefixes
+                # each message with its schema id.
+                value.serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
+          onTripEvent-in-0:
+            consumer:
+              enable-dlq: true
+              configuration:
+                value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+                # Without this the deserializer returns a DynamicMessage.
+                specific.protobuf.value.type: com.wayfare.event.TripEvent
+          onMatchEvent-in-0:
+            consumer:
+              enable-dlq: true
+              configuration:
+                value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+                specific.protobuf.value.type: com.wayfare.event.MatchEvent
+      bindings:
+        # Outbox relay -> Kafka. Name = "tripEvents" (StreamBridge target) + -out-0.
+        tripEvents-out-0:
+          destination: trip.events
+          producer:
+            # The Confluent serializer does the encoding; without this Spring converts first.
+            use-native-encoding: true
+        # Projector: binding name = @Bean method name (onTripEvent) + -in-0.
+        onTripEvent-in-0:
+          destination: trip.events
+          group: trip-projector
+          consumer:
+            max-attempts: 3
+            use-native-decoding: true
+        # Matching service outcomes -> trip commands.
+        onMatchEvent-in-0:
+          destination: match.events
+          group: trip-service
+          consumer:
+            max-attempts: 3
+            use-native-decoding: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

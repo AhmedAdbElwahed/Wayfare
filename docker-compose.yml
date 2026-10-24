@@ -62,6 +62,15 @@ services:
       timeout: 5s
       retries: 10
 
+  mongo:
+    # Read side of the trip service (CQRS): the trips_read collection.
+    image: mongo:7
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
     # KRaft mode — no ZooKeeper. Single broker, single node id, which is why
     # the replication/ISR settings below are all forced to 1: the defaults
@@ -362,6 +371,43 @@ services:
         condition: service_healthy
       wayfare-auth-service:
         condition: service_healthy
+
+  wayfare-trip-service:
+    build:
+      context: .
+      dockerfile: wayfare-trip-service/Dockerfile
+    environment:
+      <<: *otel-env
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      DB_HOST: postgres
+      DB_USERNAME: wayfare
+      DB_PASSWORD: wayfare
+      MONGO_URI: mongodb://mongo:27017/wayfare_trip
+      AUTH_SERVICE_URL: http://wayfare-auth-service:8081
+      KAFKA_BROKERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8085
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+      wayfare-auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   pgdata:

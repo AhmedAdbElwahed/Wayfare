@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package wayfare.event;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.wayfare.event";
+option java_multiple_files = true;
+option java_outer_classname = "TripEventProto";
+
+// Published by trip-service to `trip.events` (keyed by trip id). One envelope
+// message with a `oneof` instead of one message type per event: the Schema
+// Registry's default subject strategy allows a single schema per topic, and
+// adding a new event type is then just a new oneof branch (backward compatible).
+message TripEvent {
+  // UUID string; same value as the outbox row id. Consumers store it to skip
+  // redeliveries (delivery is at-least-once).
+  string event_id = 1;
+  // UUID string.
+  string trip_id = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+
+  oneof event {
+    RideRequested ride_requested = 10;
+    DriverMatchedApplied driver_matched_applied = 11;
+    NoDriversFound no_drivers_found = 12;
+    DriverArriving driver_arriving = 13;
+    TripStarted trip_started = 14;
+    TripCompleted trip_completed = 15;
+    TripCancelled trip_cancelled = 16;
+  }
+}
+
+message LatLng {
+  double lat = 1;
+  double lng = 2;
+}
+
+message RideRequested {
+  string rider_id = 1;
+  LatLng pickup = 2;
+  LatLng dropoff = 3;
+  // Decimal string (e.g. "12.50"): money is never a float.
+  string fare_locked = 4;
+}
+
+message DriverMatchedApplied {
+  string driver_id = 1;
+}
+
+message NoDriversFound {}
+
+message DriverArriving {}
+
+message TripStarted {}
+
+message TripCompleted {
+  string rider_id = 1;
+  string driver_id = 2;
+  string final_fare = 3;
+  double distance_km = 4;
+}
+
+message TripCancelled {
+  string cancelled_by = 1;
+  // Unset when the canceller gave no reason.
+  optional string reason = 2;
+}
