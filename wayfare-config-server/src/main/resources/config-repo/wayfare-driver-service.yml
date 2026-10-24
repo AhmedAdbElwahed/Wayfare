@@ -65,6 +65,11 @@ spring:
           destination: driver.events
           producer:
             use-native-encoding: true
+  
+  grpc:
+    server:
+      port: ${GRPC_PORT:9083}
+
 
 wayfare:
   driver:

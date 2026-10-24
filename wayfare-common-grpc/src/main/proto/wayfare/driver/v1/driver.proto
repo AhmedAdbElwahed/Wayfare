@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package wayfare.driver.v1;
+
+option java_package = "com.wayfare.grpc.driver";
+option java_multiple_files = true;
+
+service DriverService {
+    rpc GetDriver(GetDriverRequest) returns (DriverResponse);
+    rpc BatchGetDrivers(BatchGetDriversRequest) returns (BatchGetDriversResponse);
+}
+
+message GetDriverRequest {
+    // UUID string (the account id).
+    string driver_id = 1;
+}
+
+message BatchGetDriversRequest {
+    repeated string driver_ids = 1;
+}
+
+message BatchGetDriversResponse {
+    repeated DriverResponse drivers = 1;
+  
+}
+
+message DriverResponse {
+  string driver_id = 1;
+  DriverStatus status = 2;
+  string name = 3;               // empty until set, like rider.proto
+  string phone = 4;
+  optional string rating_avg = 5;      
+  optional Vehicle vehicle = 6;        // absent until a vehicle is registered
+}
+
+message Vehicle {
+  string make = 1;
+  string model = 2;
+  string plate = 3;
+  string color = 4;
+  int32 capacity = 5;
+  RideType type = 6;
+}
+
+enum DriverStatus {
+  DRIVER_STATUS_UNSPECIFIED = 0;
+  ONBOARDING = 1;
+  PENDING_APPROVAL = 2;
+  APPROVED = 3;
+  SUSPENDED = 4;
+}
+
+enum RideType {
+  RIDE_TYPE_UNSPECIFIED = 0;
+  ECONOMY = 1;
+  COMFORT = 2;
+  XL = 3;
+}
