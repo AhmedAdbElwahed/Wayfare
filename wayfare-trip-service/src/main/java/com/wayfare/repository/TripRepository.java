@@ -1,0 +1,9 @@
+package com.wayfare.repository;
+
+import com.wayfare.domain.Trip;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface TripRepository extends JpaRepository<Trip, UUID> {
+}
