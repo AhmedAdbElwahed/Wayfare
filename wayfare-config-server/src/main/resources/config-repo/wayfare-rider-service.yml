@@ -35,7 +35,7 @@ spring:
     server:
       # Internal service-to-service port; separate from HTTP (8082) and NOT
       # published to the host. No JWT check applies here — see
-      # my-docs/gaps/05-rider-grpc-api.md (Security) before exposing it.
+      # my-docs/rider/gaps/05-rider-grpc-api.md (Security) before exposing it.
       port: ${GRPC_PORT:9082}
 
   cloud:
