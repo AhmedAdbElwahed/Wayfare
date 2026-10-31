@@ -16,7 +16,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/auth/login", "/auth/register", "/actuator/health",
-            "/auth-service/v3/api-docs", "/rider-service/v3/api-docs", "/driver-service/v3/api-docs"
+            "/auth-service/v3/api-docs", "/rider-service/v3/api-docs", "/driver-service/v3/api-docs",
+            "/trip-service/v3/api-docs"
     );
 
     private final ReactiveJwtDecoder jwtDecoder;

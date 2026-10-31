@@ -104,6 +104,12 @@ spring:
                 - Path=/driver-service/v3/api-docs
               filters:
                 - RewritePath=/driver-service/(?<path>.*), /$\{path}
+            - id: trip-docs
+              uri: lb://wayfare-trip-service
+              predicates:
+                - Path=/trip-service/v3/api-docs
+              filters:
+                - RewritePath=/trip-service/(?<path>.*), /$\{path}
 
 springdoc:
   swagger-ui:
@@ -115,6 +121,8 @@ springdoc:
         url: /rider-service/v3/api-docs
       - name: Driver Service
         url: /driver-service/v3/api-docs
+      - name: Trip Service
+        url: /trip-service/v3/api-docs
 
 management:
   endpoints:

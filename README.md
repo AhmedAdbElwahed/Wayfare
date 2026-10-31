@@ -106,9 +106,8 @@ The Maven wrapper (`./mvnw`) is bundled.
         http://localhost:8080/auth/delete-account
    ```
 
-Swagger UI for the auth, rider and driver APIs is at
-`http://localhost:8080/swagger-ui.html`. The trip API is not in it yet; its
-endpoints are listed below.
+Swagger UI for the auth, rider, driver and trip APIs is at
+`http://localhost:8080/swagger-ui.html`.
 
 ## Requesting a ride
 
