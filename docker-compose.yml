@@ -409,6 +409,44 @@ services:
       retries: 10
       start_period: 30s
 
+  wayfare-matching-service:
+    build:
+      context: .
+      dockerfile: wayfare-matching-service/Dockerfile
+    environment:
+      <<: *otel-env
+      CONFIG_SERVER_URL: http://wayfare-config-server:8888
+      EUREKA_URL: http://wayfare-server-discovery:8761/eureka/
+      REDIS_HOST: redis
+      KAFKA_BROKERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8085
+      DRIVER_GRPC_ADDRESS: static://wayfare-driver-service:9083
+      # dev = seed SEED_DRIVER_IDS (approved driver UUIDs, comma-separated) into
+      # the geo set at start-up. Set MATCHING_PROFILES= to turn it off.
+      SPRING_PROFILES_ACTIVE: ${MATCHING_PROFILES-dev}
+      SEED_DRIVER_IDS: ${SEED_DRIVER_IDS:-}
+    ports:
+      - "8086:8086"
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      wayfare-config-server:
+        condition: service_healthy
+      wayfare-server-discovery:
+        condition: service_healthy
+      wayfare-driver-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
 volumes:
   pgdata:
   miniodata:

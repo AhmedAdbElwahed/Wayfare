@@ -1,0 +1,87 @@
+# Matching service: trip.events (RideRequested) in, match.events out.
+# Reads driver positions from Redis, checks eligibility over the driver gRPC API.
+
+server:
+  # 8084 is the trip service, 8085 the Schema Registry.
+  port: 8086
+
+wayfare:
+  matching:
+    # RideRequested carries no city yet, so every request searches this geo set.
+    city: ${MATCHING_CITY:default}
+    radii-km:
+      - 2
+      - 4
+      - 8
+    # Hits per radius; also the BatchGetDrivers size, which is capped at 100.
+    candidate-limit: 20
+    # Released early when the trip completes or is cancelled.
+    reservation-ttl: 30m
+    dispatch-guard-ttl: 5m
+    driver-lookup-timeout: 500ms
+    avg-speed-kmh: 30
+    default-rating: 4.5
+    eta-weight: 0.7
+    rating-weight: 0.3
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # A hung Redis must not block the Kafka consumer for the 60 s default.
+      timeout: 200ms
+
+  grpc:
+    client:
+      channel:
+        driver-service:
+          # Plaintext, network-internal (the driver gRPC port has no auth).
+          target: ${DRIVER_GRPC_ADDRESS:static://localhost:9083}
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS:localhost:9092}
+        bindings:
+          onTripEvent-in-0:
+            consumer:
+              enable-dlq: true
+              configuration:
+                value.deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+                # Without this the deserializer returns a DynamicMessage.
+                specific.protobuf.value.type: com.wayfare.event.TripEvent
+          matchEvents-out-0:
+            producer:
+              # Wait for the broker's ack so a failed send throws and the dispatch is retried.
+              sync: true
+              configuration:
+                # The key is the trip id as text (one trip stays on one partition).
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                value.serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
+      bindings:
+        # Binding name = @Bean method name (onTripEvent) + -in-0. Own group, so it
+        # gets every trip event independently of the trip projector.
+        onTripEvent-in-0:
+          destination: trip.events
+          group: matching-service
+          consumer:
+            max-attempts: 3
+            use-native-decoding: true
+        # StreamBridge target in MatchEventPublisher.
+        matchEvents-out-0:
+          destination: match.events
+          producer:
+            use-native-encoding: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

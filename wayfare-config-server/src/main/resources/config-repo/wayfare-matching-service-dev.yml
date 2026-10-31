@@ -1,0 +1,11 @@
+# Matching dev profile: DriverSeeder puts these drivers in the geo set at start-up.
+# The ids must be real, APPROVED drivers, or the gRPC eligibility check drops them.
+
+wayfare:
+  matching:
+    seed:
+      # Comma-separated driver (account) UUIDs.
+      driver-ids: ${SEED_DRIVER_IDS:}
+      # Drivers are placed 0.5 km apart, going north from this point.
+      lat: ${SEED_LAT:30.0444}
+      lng: ${SEED_LNG:31.2357}
